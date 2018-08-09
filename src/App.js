@@ -3,6 +3,7 @@ import './App.css';
 import { TitleScreen } from './ReactComponents/TitleScreen';
 import InputManager from './InputManager';
 import Ship from './GameComponents/Ship';
+import Invader from './GameComponents/Invader';
 
 const width = 800;
 const height = window.innerHeight;
@@ -27,6 +28,7 @@ class App extends Component {
       context: null
     };
     this.ship = null;
+    this.invaders = [];
   }
   render() {
     return (
@@ -59,6 +61,7 @@ class App extends Component {
       if (this.ship !== undefined && this.ship !== null){
         this.ship.update(keys);
         this.ship.render(this.state);
+        this.renderInvaders(this.state);
       }
     }
     requestAnimationFrame(() => this.update());
@@ -73,6 +76,7 @@ class App extends Component {
       }
     });
     this.ship = ship;
+    this.createInvaders(10);
     this.setState({
       gameState: GameState.Playing
     });
@@ -84,6 +88,56 @@ class App extends Component {
     context.fillRect(0,0,this.state.screen.width, this.state.screen.height);
     context.globalAlpha = 1;
     context.restore();
+  }
+  createInvaders(count) {
+    const newPosition = { x: 100, y: 20 };
+    let swapStartX = true;
+
+    for(let i = 0; i < count; i++) {
+      const invader = new Invader({
+        position: { x: newPosition.x, y: newPosition.y },
+        speed: 1,
+        radius: 50
+      });
+
+      newPosition.x += invader.radius + 20;
+
+      if(newPosition.x + invader.radius + 50 >= (this.state.screen.width * this.state.screen.ratio)) {
+        newPosition.x = swapStartX ? 110: 100;
+        swapStartX = !swapStartX;
+        newPosition.y += invader.radius + 20;
+      }
+
+      this.invaders.push(invader);
+    }
+  }
+  renderInvaders(state) {
+    let index = 0;
+    let reverse = false;
+
+    for(let invader of this.invaders) {
+      if (invader.delete) {
+        this.invaders.splice(index, 1);
+      } else if ( invader.position.x + invader.radius >= (this.state.screen.width * this.state.screen.ratio) || invader.position.x - invader.radius <= 0) {
+        reverse = true;
+      } else {
+        this.invaders[index].update();
+        this.invaders[index].render(state);
+      }
+      index++;
+    }
+
+    if (reverse) {
+      this.reverseInvaders();
+    }
+  }
+  reverseInvaders() {
+    let index = 0;
+    for (let invader of this.invaders) {
+      this.invaders[index].reverse();
+      this.invaders[index].position.y += 50;
+      index++;
+    }
   }
 }
 
